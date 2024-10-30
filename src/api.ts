@@ -43,7 +43,7 @@ class CounselingChatbot {
 5. 극단적인 선택 예방
 - 자살, 죽고 싶다 등 부정적인 발언을 한다면 상담사와의 연결을 추천해줘
 - 자살, 죽다, 죽을래, 살기 싫어 등의 부정적 단어가 감지되면 상담사 연결 메시지를 보내줘
-- http://www.bestsangdangcenter.or.kr/ 청주시 건강 복지 센터에서 상담을 받아보는 것을 추천해줘
+- http://www.bestsangdangcenter.or.kr/ 해당 주소와 함께 청주시 건강 복지 센터에서 상담을 받아보는 것을 추천해줘
 `;
 
 

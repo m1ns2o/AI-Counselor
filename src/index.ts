@@ -3,8 +3,10 @@ import WebSocket, { WebSocketServer } from 'ws';
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import express, { Request, Response } from 'express';
 
 const counselor = new CounselingChatbot();
+const app = express();
 
 async function chatWithCounselor(text: string): Promise<string> {
     try {
@@ -17,20 +19,24 @@ async function chatWithCounselor(text: string): Promise<string> {
     }
 }
 
-// HTTP 서버 생성
-const server = http.createServer((req, res) => {
-    if (req.url === '/') {
-        fs.readFile(path.join(__dirname, 'index.html'), (err, data) => {
-            if (err) {
-                res.writeHead(500);
-                res.end('Error loading index.html');
-                return;
-            }
-            res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end(data);
-        });
-    }
+// Vue.js 빌드 파일 경로 설정
+const DIST_DIR = path.join(__dirname, '../dist'); // Vue.js 빌드 파일 위치
+
+// 정적 파일 제공 미들웨어 설정
+app.use(express.static(DIST_DIR));
+
+// API 라우트 설정
+app.get('/api/health', (req: Request, res: Response) => {
+    res.json({ status: 'ok' });
 });
+
+// Vue 라우터를 위한 모든 경로에서 index.html 제공
+app.get('*', (req: Request, res: Response) => {
+    res.sendFile(path.join(DIST_DIR, 'index.html'));
+});
+
+// Express 앱을 HTTP 서버로 감싸기
+const server = http.createServer(app);
 
 // WebSocket 서버 생성
 const wss = new WebSocketServer({ server });
@@ -55,7 +61,7 @@ wss.on('connection', (ws: WebSocket) => {
     // 클라이언트로부터 메시지 수신
     ws.on('message', async (data: WebSocket.Data) => {
         try {
-            const message = JSON.parse(data.toString());
+            const message = JSON.parse(data.toString()) as Message;
             console.log('Received message:', message);
 
             // 챗봇 응답 처리
@@ -87,12 +93,12 @@ wss.on('connection', (ws: WebSocket) => {
         console.log('Client disconnected');
     });
 
-    ws.on('error', (error) => {
+    ws.on('error', (error: Error) => {
         console.error('WebSocket error:', error);
     });
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
