@@ -1,16 +1,12 @@
 import CounselingChatbot from "./api";
 import WebSocket, { WebSocketServer } from 'ws';
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
 import express, { Request, Response } from 'express';
-import cors from 'cors'; // CORS 미들웨어 추가
 
 const counselor = new CounselingChatbot();
 const app = express();
-
-// CORS 설정
-app.use(cors({
-    origin: 'https://ai-counselor.m1ns2o.com' // 프론트엔드 도메인
-}));
 
 async function chatWithCounselor(text: string): Promise<string> {
     try {
@@ -23,9 +19,20 @@ async function chatWithCounselor(text: string): Promise<string> {
     }
 }
 
+// Vue.js 빌드 파일 경로 설정
+const DIST_DIR = path.join(__dirname, '../dist'); // Vue.js 빌드 파일 위치
+
+// 정적 파일 제공 미들웨어 설정
+app.use(express.static(DIST_DIR));
+
 // API 라우트 설정
 app.get('/api/health', (req: Request, res: Response) => {
     res.json({ status: 'ok' });
+});
+
+// Vue 라우터를 위한 모든 경로에서 index.html 제공
+app.get('*', (req: Request, res: Response) => {
+    res.sendFile(path.join(DIST_DIR, 'index.html'));
 });
 
 // Express 앱을 HTTP 서버로 감싸기
