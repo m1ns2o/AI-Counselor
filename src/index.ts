@@ -1,18 +1,16 @@
 import CounselingChatbot from "./api";
 import WebSocket, { WebSocketServer } from 'ws';
-import https from 'https';
-import fs from 'fs';
-import path from 'path';
+import http from 'http';
 import express, { Request, Response } from 'express';
+import cors from 'cors'; // CORS 미들웨어 추가
 
 const counselor = new CounselingChatbot();
 const app = express();
 
-// SSL 인증서 설정
-const options = {
-    cert: fs.readFileSync('/etc/letsencrypt/live/ai-counselor.m1ns2o.com/fullchain.pem'),
-    key: fs.readFileSync('/etc/letsencrypt/live/ai-counselor.m1ns2o.com/privkey.pem')
-};
+// CORS 설정
+app.use(cors({
+    origin: 'https://ai-counselor.m1ns2o.com' // 프론트엔드 도메인
+}));
 
 async function chatWithCounselor(text: string): Promise<string> {
     try {
@@ -25,24 +23,13 @@ async function chatWithCounselor(text: string): Promise<string> {
     }
 }
 
-// Vue.js 빌드 파일 경로 설정
-const DIST_DIR = path.join(__dirname, '../dist');
-
-// 정적 파일 제공 미들웨어 설정
-app.use(express.static(DIST_DIR));
-
 // API 라우트 설정
 app.get('/api/health', (req: Request, res: Response) => {
     res.json({ status: 'ok' });
 });
 
-// Vue 라우터를 위한 모든 경로에서 index.html 제공
-app.get('*', (req: Request, res: Response) => {
-    res.sendFile(path.join(DIST_DIR, 'index.html'));
-});
-
-// HTTPS 서버 생성
-const server = https.createServer(options, app);
+// Express 앱을 HTTP 서버로 감싸기
+const server = http.createServer(app);
 
 // WebSocket 서버 생성
 const wss = new WebSocketServer({ server });
@@ -104,16 +91,7 @@ wss.on('connection', (ws: WebSocket) => {
     });
 });
 
-// HTTP를 HTTPS로 리다이렉트하는 서버 생성
-const http = require('http');
-http.createServer((req: Request, res: Response) => {
-    res.writeHead(301, {
-        Location: `https://${req.headers.host}${req.url}`
-    });
-    res.end();
-}).listen(80);
-
-const PORT = process.env.PORT || 443; // HTTPS 기본 포트로 변경
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Server is running on https://localhost:${PORT}`);
+    console.log(`Server is running on http://localhost:${PORT}`);
 });
